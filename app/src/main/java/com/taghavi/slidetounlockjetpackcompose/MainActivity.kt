@@ -7,11 +7,15 @@ import androidx.activity.enableEdgeToEdge
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -20,9 +24,16 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.tooling.preview.Preview
@@ -65,11 +76,18 @@ fun SlideToBookButton(
     onBtnSwipe: () -> Unit
 ) {
     val sliderButtonWidthDP = 70.dp
+    val density = LocalDensity.current
+    val sliderButtonWidthPx = with(density) { sliderButtonWidthDP.toPx() }
+    var sliderPositionPx by remember { mutableFloatStateOf(0f) }
+    var boxWidthPx by remember { mutableStateOf(0) }
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .height(55.dp)
+            .onSizeChanged { size ->
+                boxWidthPx = size.width
+            }
     ) {
         Box(
             modifier = Modifier
@@ -88,12 +106,30 @@ fun SlideToBookButton(
 
         Row(
             modifier = Modifier
+                .align(Alignment.CenterStart)
+                .padding(1.dp)
+                .offset(x = with(density) { sliderPositionPx.toDp() })
+                .draggable(
+                    orientation = Orientation.Horizontal,
+                    state = rememberDraggableState { delta ->
+                        val newPosition = sliderPositionPx + delta
+                        val maxPosition = boxWidthPx - sliderButtonWidthPx
+                        sliderPositionPx = newPosition.coerceIn(0f, maxPosition)
+                    },
+                    onDragStarted = {},
+                    onDragStopped = {},
+                ),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            SliderButton(
-                sliderBtnWidth = sliderButtonWidthDP,
-                sliderBtnBackgroundColor = sliderBtnBackgroundColor,
-                sliderBtnIcon = sliderBtnIcon,
-            )
+            Box(
+                modifier = Modifier
+            ) {
+                SliderButton(
+                    sliderBtnWidth = sliderButtonWidthDP,
+                    sliderBtnBackgroundColor = sliderBtnBackgroundColor,
+                    sliderBtnIcon = sliderBtnIcon,
+                )
+            }
         }
     }
 }
